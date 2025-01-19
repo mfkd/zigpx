@@ -1,24 +1,34 @@
 const std = @import("std");
+const clap = @import("clap");
 
-pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+fn parse() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    const params = comptime clap.parseParamsComptime(
+        \\-u, --url <str>...     URL of komoot track
+        \\-o, --output <str>...  GPX Outputfile
+        \\<str>...
+        \\
+    );
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    var diag = clap.Diagnostic{};
+    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+        .diagnostic = &diag,
+        .allocator = gpa.allocator(),
+    }) catch |err| {
+        // Report useful error and exit.
+        diag.report(std.io.getStdErr().writer(), err) catch {};
+        return err;
+    };
+    defer res.deinit();
 
-    try bw.flush(); // don't forget to flush!
+    for (res.args.output) |s|
+        std.debug.print("--url = {s}\n", .{s});
+    for (res.args.url) |s|
+        std.debug.print("--output = {s}\n", .{s});
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+pub fn main() !void {
+    try parse();
 }

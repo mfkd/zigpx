@@ -29,12 +29,17 @@ pub fn build(b: *std.Build) void {
     // running `zig build`).
     b.installArtifact(lib);
 
+    // Add dependencies
+    const clap = b.dependency("clap", .{});
     const exe = b.addExecutable(.{
         .name = "zigpx",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
+
+    // Add the dependency import
+    exe.root_module.addImport("clap", clap.module("clap"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
