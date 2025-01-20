@@ -5,6 +5,12 @@ fn parse() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
+fn parse(
+    allocator: std.mem.Allocator,
+) !void {
+fn parse(
+    allocator: std.mem.Allocator,
+) !void {
     const params = comptime clap.parseParamsComptime(
         \\-u, --url <str>...     URL of komoot track
         \\-o, --output <str>...  GPX Outputfile
@@ -15,7 +21,7 @@ fn parse() !void {
     var diag = clap.Diagnostic{};
     var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
-        .allocator = gpa.allocator(),
+        .allocator = allocator,
     }) catch |err| {
         // Report useful error and exit.
         diag.report(std.io.getStdErr().writer(), err) catch {};
@@ -30,5 +36,11 @@ fn parse() !void {
 }
 
 pub fn main() !void {
-    try parse();
+    const alloc = std.heap.page_allocator;
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    const allocator = arena.allocator();
+
+    defer arena.deinit();
+
+    try parse(allocator);
 }
