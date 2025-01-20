@@ -1,13 +1,11 @@
-const std = @import("std");
 const clap = @import("clap");
+const std = @import("std");
+const writer = std.io.getStdOut().writer();
 
-const Args = struct {
-    url: []const u8,
-    output: []const u8,
+const HTTPStatusError = error{
+    StatusNotOK,
 };
-fn parse() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+
 const Args = struct {
     url: []const u8,
     output: []const u8,
@@ -15,11 +13,6 @@ const Args = struct {
 
 fn parse(
     allocator: std.mem.Allocator,
-) !Args {
-) !void {
-fn parse(
-    allocator: std.mem.Allocator,
-) !void {
 ) !Args {
     const params = comptime clap.parseParamsComptime(
         \\-u, --url <str>...     URL of komoot track
@@ -47,48 +40,48 @@ fn parse(
         .output = output,
     };
 }
-        .url = url,
-        .output = output,
-    };
-}
+
+fn get(
+    url: []const u8,
+    headers: []const std.http.Header,
+    client: *std.http.Client,
+    allocator: std.mem.Allocator,
+) !std.ArrayList(u8) {
+    var response_body = std.ArrayList(u8).init(allocator);
+
+    const response = try client.fetch(.{
+        .method = .GET,
+        .location = .{ .url = url },
+        .extra_headers = headers,
+        .response_storage = .{ .dynamic = &response_body },
+    });
+
+    if (response.status != std.http.Status.ok) {
+        try writer.print("Response Status: {d}\n", .{response.status});
+        return HTTPStatusError.StatusNotOK;
+    }
+
+    return response_body;
 }
 
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
     var arena = std.heap.ArenaAllocator.init(alloc);
     const allocator = arena.allocator();
-    const allocator = arena.allocator();
-    const args = try parse(allocator);
-
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
-    const args = try parse(allocator);
-
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
-
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
-    const args = try parse(allocator);
-
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
-    const args = try parse(allocator);
-
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
-    const args = try parse(allocator);
-
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
-
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
 
     defer arena.deinit();
 
     const args = try parse(allocator);
 
-    std.debug.print("URL: {s}\n", .{args.url});
-    std.debug.print("output: {s}\n", .{args.output});
+    var client = std.http.Client{
+        .allocator = allocator,
+    };
+
+    const headers = &[_]std.http.Header{
+        .{ .name = "X-Custom-Header", .value = "application" },
+    };
+
+    const response = try get(args.url, headers, &client, alloc);
+
+    try writer.print("{s}", .{response.items});
 }
