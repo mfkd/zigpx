@@ -69,19 +69,19 @@ fn get(
 }
 
 fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) ![]const u8 {
-    const startMarker = "kmtBoot.setProps(\"";
-    const endMarker = "\");";
+    const start_marker = "kmtBoot.setProps(\"";
+    const end_marker = "\");";
 
-    var startIdx = std.mem.indexOf(u8, html, startMarker) orelse return ParseError.NotFound;
-    startIdx += startMarker.len;
+    var start_idx = std.mem.indexOf(u8, html, start_marker) orelse return ParseError.NotFound;
+    start_idx += start_marker.len;
 
-    const endIdx = std.mem.lastIndexOf(u8, html[startIdx..], endMarker) orelse return ParseError.NotFound;
+    const end_idx = std.mem.lastIndexOf(u8, html[start_idx..], end_marker) orelse return ParseError.NotFound;
 
-    var jsonStr = html[startIdx .. startIdx + endIdx];
-    jsonStr = try std.mem.replaceOwned(u8, allocator, jsonStr, "\\\\", "\\");
-    jsonStr = try std.mem.replaceOwned(u8, allocator, jsonStr, "\\\"", "\"");
+    var json = html[start_idx .. start_idx + end_idx];
+    json = try std.mem.replaceOwned(u8, allocator, json, "\\\\", "\\");
+    json = try std.mem.replaceOwned(u8, allocator, json, "\\\"", "\"");
 
-    return jsonStr;
+    return json;
 }
 
 pub fn main() !void {
@@ -102,7 +102,7 @@ pub fn main() !void {
     };
 
     const response = try get(args.url, headers, &client, alloc);
-    const jsonStr = try parseJsonFromHtml(response.items, allocator);
+    const json = try parseJsonFromHtml(response.items, allocator);
 
-    try writer.print("{s}", .{jsonStr});
+    try writer.print("{s}", .{json});
 }
