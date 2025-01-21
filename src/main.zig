@@ -6,6 +6,10 @@ const HTTPStatusError = error{
     StatusNotOK,
 };
 
+const ParseError = error{
+    NotFound,
+};
+
 const Args = struct {
     url: []const u8,
     output: []const u8,
@@ -64,6 +68,22 @@ fn get(
     return response_body;
 }
 
+fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) ![]const u8 {
+    const startMarker = "kmtBoot.setProps(\"";
+    const endMarker = "\");";
+
+    var startIdx = std.mem.indexOf(u8, html, startMarker) orelse return ParseError.NotFound;
+    startIdx += startMarker.len;
+
+    const endIdx = std.mem.lastIndexOf(u8, html[startIdx..], endMarker) orelse return ParseError.NotFound;
+
+    var jsonStr = html[startIdx .. startIdx + endIdx];
+    jsonStr = try std.mem.replaceOwned(u8, allocator, jsonStr, "\\\\", "\\");
+    jsonStr = try std.mem.replaceOwned(u8, allocator, jsonStr, "\\\"", "\"");
+
+    return jsonStr;
+}
+
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
     var arena = std.heap.ArenaAllocator.init(alloc);
@@ -82,6 +102,7 @@ pub fn main() !void {
     };
 
     const response = try get(args.url, headers, &client, alloc);
+    const jsonStr = try parseJsonFromHtml(response.items, allocator);
 
-    try writer.print("{s}", .{response.items});
+    try writer.print("{s}", .{jsonStr});
 }
