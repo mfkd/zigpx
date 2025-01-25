@@ -6,7 +6,7 @@ Zig version of [komootgpx](https://github.com/mfkd/komootgpx).
 
 ## Installation
 
-Ensure you have Zig installed, then compile and install:
+Ensure you have Zig installed, then build:
 
 ```sh
 zig build -Drelease-fast
