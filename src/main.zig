@@ -202,14 +202,12 @@ pub fn main() !void {
     const alloc = std.heap.page_allocator;
     var arena = std.heap.ArenaAllocator.init(alloc);
     const allocator = arena.allocator();
-
     defer arena.deinit();
 
     const args = try parse(allocator);
 
-    var client = std.http.Client{
-        .allocator = allocator,
-    };
+    var client = std.http.Client{ .allocator = allocator };
+    defer client.deinit();
 
     const headers = &[_]std.http.Header{
         .{ .name = "X-Custom-Header", .value = "application" },
