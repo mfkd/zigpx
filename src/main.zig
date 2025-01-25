@@ -7,6 +7,8 @@ const AppError = error{
     ParseErrorNotFound,
     MissingCommand,
     FileWriteError,
+    MissingOutput,
+    MissingURL,
 };
 
 const Args = struct {
@@ -62,11 +64,11 @@ fn parse(
 
     const output = if (res.args.output.len > 0) res.args.output[0] else {
         std.debug.print("Error: Missing required argument --output\n", .{});
-        return error.MissingOutput;
+        return AppError.MissingOutput;
     };
     const url = if (res.args.url.len > 0) res.args.url[0] else {
         std.debug.print("Error: Missing required argument --url\n", .{});
-        return error.MissingURL;
+        return AppError.MissingURL;
     };
 
     return Args{
