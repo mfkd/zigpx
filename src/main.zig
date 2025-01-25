@@ -125,6 +125,7 @@ pub fn main() !void {
 
     const headers = &[_]std.http.Header{
         .{ .name = "X-Custom-Header", .value = "application" },
+        .{ .name = "User-Agent", .value = "Mozilla/5.0" },
     };
 
     const response = try get(args.url, headers, &client, alloc);
