@@ -116,7 +116,7 @@ fn writeGPX(track: Track, allocator: std.mem.Allocator, file_path: []const u8) !
     const gpx = GPX{
         .version = "1.1",
         .creator = "zigpx",
-        .name = "Komoot Track",
+        .name = track.name,
         .tracks = tracks, // Solution applied
     };
 
