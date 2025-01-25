@@ -198,13 +198,11 @@ fn json_to_track(json: std.json.Value, allocator: std.mem.Allocator) !Track {
     return Track{ .name = name, .segments = segments };
 }
 
-pub fn main() !void {
-    const alloc = std.heap.page_allocator;
-    var arena = std.heap.ArenaAllocator.init(alloc);
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    const args = try parse(allocator);
+fn run(allocator: std.mem.Allocator) !void {
+    const args = parse(allocator) catch |err| {
+        try writer.print("Failed to parse arguments: {s}\n", .{@errorName(err)});
+        return err;
+    };
 
     var client = std.http.Client{ .allocator = allocator };
     defer client.deinit();
@@ -214,12 +212,35 @@ pub fn main() !void {
         .{ .name = "User-Agent", .value = "Mozilla/5.0" },
     };
 
-    const response = try get(args.url, headers, &client, alloc);
+    try writer.print("Fetching data from: {s}\n", .{args.url});
+    const response = try get(args.url, headers, &client, allocator);
+
+    try writer.print("Parsing HTML response...\n", .{});
     const json = try parseJsonFromHtml(response.items, allocator);
 
+    try writer.print("Converting to GPX track...\n", .{});
     const track = try json_to_track(json, allocator);
 
+    try writer.print("Writing GPX file to: {s}\n", .{args.output});
     try writeGPX(track, allocator, args.output);
 
-    try writer.print("GPX Name: {?s}\n", .{track.name});
+    try writer.print("Successfully created GPX file. Track name: {?s}\n", .{track.name});
+}
+
+pub fn main() !void {
+    const alloc = std.heap.page_allocator;
+    var arena = std.heap.ArenaAllocator.init(alloc);
+    defer arena.deinit();
+
+    run(arena.allocator()) catch |err| {
+        // Print to stderr instead of stdout
+        std.debug.print("Failed to run: {s}\n", .{@errorName(err)});
+        if (std.debug.runtime_safety) {
+            // In debug builds, print the stack trace if available
+            if (@errorReturnTrace()) |trace| {
+                std.debug.dumpStackTrace(trace.*);
+            }
+        }
+        std.process.exit(1);
+    };
 }
