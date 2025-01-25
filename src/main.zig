@@ -218,10 +218,7 @@ fn fetchTrackHtml(url: []const u8, allocator: std.mem.Allocator) ![]u8 {
 }
 
 fn run(allocator: std.mem.Allocator) !void {
-    const args = parseArgs(allocator) catch |err| {
-        try writer.print("Failed to parse arguments: {s}\n", .{@errorName(err)});
-        return err;
-    };
+    const args = try parseArgs(allocator);
 
     const html = try fetchTrackHtml(args.url, allocator);
 
