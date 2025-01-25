@@ -109,14 +109,13 @@ fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) !std.json.Value {
     return (try std.json.parseFromSlice(std.json.Value, allocator, json, .{})).value;
 }
 
-fn writeGPX(track: Track, allocator: std.mem.Allocator, file_path: []const u8) !void {
-    var tracks = try allocator.alloc(Track, 1);
-    tracks[0] = track;
+fn writeGPX(track: Track, file_path: []const u8) !void {
+    var tracks: [1]Track = .{track};
     const gpx = GPX{
         .version = "1.1",
         .creator = "zigpx",
         .name = track.name,
-        .tracks = tracks, // Solution applied
+        .tracks = &tracks, // Solution applied
     };
 
     var file = try std.fs.cwd().createFile(file_path, .{ .truncate = true });
@@ -222,7 +221,7 @@ fn run(allocator: std.mem.Allocator) !void {
     const track = try json_to_track(json, allocator);
 
     try writer.print("Writing GPX file to: {s}\n", .{args.output});
-    try writeGPX(track, allocator, args.output);
+    try writeGPX(track, args.output);
 
     try writer.print("Successfully created GPX file. Track name: {?s}\n", .{track.name});
 }
