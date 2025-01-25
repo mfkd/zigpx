@@ -204,12 +204,7 @@ fn convertJsonToTrack(json: std.json.Value, allocator: std.mem.Allocator) !Track
     return Track{ .name = track_name, .segments = segments };
 }
 
-fn run(allocator: std.mem.Allocator) !void {
-    const args = parseArgs(allocator) catch |err| {
-        try writer.print("Failed to parse arguments: {s}\n", .{@errorName(err)});
-        return err;
-    };
-
+fn fetchTrackHtml(url: []const u8, allocator: std.mem.Allocator) ![]u8 {
     var client = std.http.Client{ .allocator = allocator };
     defer client.deinit();
 
@@ -218,11 +213,20 @@ fn run(allocator: std.mem.Allocator) !void {
         .{ .name = "User-Agent", .value = "Mozilla/5.0" },
     };
 
-    try writer.print("Fetching data from: {s}\n", .{args.url});
-    const response = try get(args.url, headers, &client, allocator);
+    const response = try get(url, headers, &client, allocator);
+    return response.items;
+}
+
+fn run(allocator: std.mem.Allocator) !void {
+    const args = parseArgs(allocator) catch |err| {
+        try writer.print("Failed to parse arguments: {s}\n", .{@errorName(err)});
+        return err;
+    };
+
+    const html = try fetchTrackHtml(args.url, allocator);
 
     try writer.print("Parsing HTML response...\n", .{});
-    const json = try parseJsonFromHtml(response.items, allocator);
+    const json = try parseJsonFromHtml(html, allocator);
 
     try writer.print("Converting to GPX track...\n", .{});
     const track = try convertJsonToTrack(json, allocator);
