@@ -225,13 +225,10 @@ fn run(allocator: std.mem.Allocator) !void {
 
     const html = try fetchTrackHtml(args.url, allocator);
 
-    try writer.print("Parsing HTML response...\n", .{});
     const json = try parseJsonFromHtml(html, allocator);
 
-    try writer.print("Converting to GPX track...\n", .{});
     const track = try convertJsonToTrack(json, allocator);
 
-    try writer.print("Writing GPX file to: {s}\n", .{args.output});
     try writeGPX(track, args.output);
 
     try writer.print("Successfully created GPX file. Track name: {?s}\n", .{track.name});
