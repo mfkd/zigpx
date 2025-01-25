@@ -42,7 +42,7 @@ const Point = struct {
     elevation: ?f64 = null, // Optional field
 };
 
-fn parse(
+fn parseArgs(
     allocator: std.mem.Allocator,
 ) !Args {
     const params = comptime clap.parseParamsComptime(
@@ -205,7 +205,7 @@ fn convertJsonToTrack(json: std.json.Value, allocator: std.mem.Allocator) !Track
 }
 
 fn run(allocator: std.mem.Allocator) !void {
-    const args = parse(allocator) catch |err| {
+    const args = parseArgs(allocator) catch |err| {
         try writer.print("Failed to parse arguments: {s}\n", .{@errorName(err)});
         return err;
     };
