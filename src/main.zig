@@ -15,6 +15,32 @@ const Args = struct {
     output: []const u8,
 };
 
+// GPX represents the root GPX element
+const GPX = struct {
+    version: []const u8,
+    creator: []const u8,
+    name: ?[]const u8 = null,
+    tracks: []Track,
+};
+
+// Track represents a GPX track
+const Track = struct {
+    name: ?[]const u8 = null,
+    segments: []Segment,
+};
+
+// Segment represents a track segment
+const Segment = struct {
+    points: []Point,
+};
+
+// Point represents a track point with attributes
+const Point = struct {
+    lat: f64,
+    lon: f64,
+    elevation: ?f64 = null, // Optional field
+};
+
 fn parse(
     allocator: std.mem.Allocator,
 ) !Args {
