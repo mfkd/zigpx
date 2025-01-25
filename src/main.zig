@@ -110,6 +110,59 @@ fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) !std.json.Value {
     return (try std.json.parseFromSlice(std.json.Value, allocator, json, .{})).value;
 }
 
+fn writeGPX(track: Track, file_path: []const u8) !void {
+    const track_array = [_]Track{track};
+    const gpx = GPX{
+        .version = "1.1",
+        .creator = "komoot-to-gpx",
+        .name = "Komoot Track",
+        .tracks = @constCast(track_array[0..]), // Solution applied
+    };
+
+    var file = try std.fs.cwd().createFile(file_path, .{ .truncate = true });
+    defer file.close();
+
+    var xml_writer = file.writer();
+
+    try xml_writer.print(
+        \\<?xml version="1.0" encoding="UTF-8"?>
+        \\<gpx version="{s}" creator="{s}" xmlns="http://www.topografix.com/GPX/1/1">
+        \\  <metadata>
+        \\    <name>{s}</name>
+        \\  </metadata>
+        \\
+    , .{ gpx.version, gpx.creator, gpx.name.? });
+
+    for (gpx.tracks) |track_entry| {
+        try xml_writer.writeAll("  <trk>\n");
+        if (track_entry.name) |track_name| {
+            try xml_writer.print("    <name>{s}</name>\n", .{track_name});
+        }
+
+        for (track_entry.segments) |segment| {
+            try xml_writer.writeAll("    <trkseg>\n");
+
+            for (segment.points) |point| {
+                try xml_writer.print("      <trkpt lat=\"{d:.6}\" lon=\"{d:.6}\">\n", .{ point.lat, point.lon });
+
+                if (point.elevation) |elevation| {
+                    try xml_writer.print("        <ele>{d:.1}</ele>\n", .{elevation});
+                }
+
+                try xml_writer.writeAll("      </trkpt>\n");
+            }
+
+            try xml_writer.writeAll("    </trkseg>\n");
+        }
+
+        try xml_writer.writeAll("  </trk>\n");
+    }
+
+    try xml_writer.writeAll("</gpx>\n");
+
+    std.debug.print("GPX file written to: {s}\n", .{file_path});
+}
+
 fn json_to_track(json: std.json.Value, allocator: std.mem.Allocator) !Track {
     const name_value = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("name");
     const name = if (name_value) |n| n.string else "Unknown";
@@ -167,6 +220,8 @@ pub fn main() !void {
     const json = try parseJsonFromHtml(response.items, allocator);
 
     const track = try json_to_track(json, allocator);
+
+    try writeGPX(track, args.output);
 
     try writer.print("GPX Name: {?s}\n", .{track.name});
 }
