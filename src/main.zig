@@ -170,10 +170,18 @@ fn writeGPX(track: Track, file_path: []const u8) !void {
 }
 
 fn convertJsonToTrack(json: std.json.Value, allocator: std.mem.Allocator) !Track {
-    const track_name_entry = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("name");
+    const track_name_entry = json.object.get("page").?
+        .object.get("_embedded").?
+        .object.get("tour").?
+        .object.get("name");
     const track_name = if (track_name_entry) |n| n.string else "Unknown";
 
-    const coordinate_items = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("_embedded").?.object.get("coordinates").?.object.get("items");
+    const coordinate_items = json.object.get("page").?
+        .object.get("_embedded").?
+        .object.get("tour").?
+        .object.get("_embedded").?
+        .object.get("coordinates").?
+        .object.get("items");
 
     var points: []Point = undefined;
 
