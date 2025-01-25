@@ -228,8 +228,7 @@ fn run(allocator: std.mem.Allocator) !void {
 }
 
 pub fn main() !void {
-    const alloc = std.heap.page_allocator;
-    var arena = std.heap.ArenaAllocator.init(alloc);
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
 
     run(arena.allocator()) catch |err| {
