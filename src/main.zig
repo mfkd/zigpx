@@ -36,8 +36,8 @@ const Segment = struct {
 
 // Point represents a track point with attributes
 const Point = struct {
-    lat: f64,
-    lon: f64,
+    latitude: f64,
+    longitude: f64,
     elevation: ?f64 = null, // Optional field
 };
 
@@ -142,7 +142,7 @@ fn writeGPX(track: Track, file_path: []const u8) !void {
             try xml_writer.writeAll("    <trkseg>\n");
 
             for (segment.points) |point| {
-                try xml_writer.print("      <trkpt lat=\"{d:.6}\" lon=\"{d:.6}\">\n", .{ point.lat, point.lon });
+                try xml_writer.print("      <trkpt lat=\"{d:.6}\" lon=\"{d:.6}\">\n", .{ point.latitude, point.longitude });
 
                 if (point.elevation) |elevation| {
                     try xml_writer.print("        <ele>{d:.1}</ele>\n", .{elevation});
@@ -162,19 +162,19 @@ fn writeGPX(track: Track, file_path: []const u8) !void {
     std.debug.print("GPX file written to: {s}\n", .{file_path});
 }
 
-fn json_to_track(json: std.json.Value, allocator: std.mem.Allocator) !Track {
-    const name_value = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("name");
-    const name = if (name_value) |n| n.string else "Unknown";
+fn convertJsonToTrack(json: std.json.Value, allocator: std.mem.Allocator) !Track {
+    const track_name_entry = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("name");
+    const track_name = if (track_name_entry) |n| n.string else "Unknown";
 
-    const items = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("_embedded").?.object.get("coordinates").?.object.get("items");
+    const coordinate_items = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("_embedded").?.object.get("coordinates").?.object.get("items");
 
     var points: []Point = undefined;
 
-    if (items) |val| {
-        points = try allocator.alloc(Point, val.array.items.len);
-        for (val.array.items, 0..) |item, i| {
-            const alt_value = item.object.get("alt");
-            const elevation = if (alt_value) |alt|
+    if (coordinate_items) |coordinates_json| {
+        points = try allocator.alloc(Point, coordinates_json.array.items.len);
+        for (coordinates_json.array.items, 0..) |geo_point, i| {
+            const altitude_entry = geo_point.object.get("alt");
+            const elevation = if (altitude_entry) |alt|
                 switch (alt) {
                     .float => alt.float,
                     .integer => @as(f64, @floatFromInt(alt.integer)),
@@ -184,8 +184,8 @@ fn json_to_track(json: std.json.Value, allocator: std.mem.Allocator) !Track {
                 null;
 
             points[i] = Point{
-                .lat = item.object.get("lat").?.float,
-                .lon = item.object.get("lng").?.float,
+                .latitude = geo_point.object.get("lat").?.float,
+                .longitude = geo_point.object.get("lng").?.float,
                 .elevation = elevation,
             };
         }
@@ -194,7 +194,7 @@ fn json_to_track(json: std.json.Value, allocator: std.mem.Allocator) !Track {
     var segments = try allocator.alloc(Segment, 1);
     segments[0] = .{ .points = points };
 
-    return Track{ .name = name, .segments = segments };
+    return Track{ .name = track_name, .segments = segments };
 }
 
 fn run(allocator: std.mem.Allocator) !void {
@@ -218,7 +218,7 @@ fn run(allocator: std.mem.Allocator) !void {
     const json = try parseJsonFromHtml(response.items, allocator);
 
     try writer.print("Converting to GPX track...\n", .{});
-    const track = try json_to_track(json, allocator);
+    const track = try convertJsonToTrack(json, allocator);
 
     try writer.print("Writing GPX file to: {s}\n", .{args.output});
     try writeGPX(track, args.output);
