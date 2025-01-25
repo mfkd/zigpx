@@ -2,12 +2,11 @@ const clap = @import("clap");
 const std = @import("std");
 const writer = std.io.getStdOut().writer();
 
-const HTTPStatusError = error{
-    StatusNotOK,
-};
-
-const ParseError = error{
-    NotFound,
+const AppError = error{
+    HTTPStatusNotOK,
+    ParseErrorNotFound,
+    MissingCommand,
+    FileWriteError,
 };
 
 const Args = struct {
@@ -61,8 +60,8 @@ fn parse(
         return err;
     };
 
-    const output = if (res.args.output.len > 0) res.args.output[0] else return error.MissingCommand;
-    const url = if (res.args.url.len > 0) res.args.url[0] else return error.MissingCommand;
+    const output = if (res.args.output.len > 0) res.args.output[0] else return AppError.MissingCommand;
+    const url = if (res.args.url.len > 0) res.args.url[0] else return AppError.MissingCommand;
 
     return Args{
         .url = url,
@@ -87,7 +86,7 @@ fn get(
 
     if (response.status != std.http.Status.ok) {
         try writer.print("Response Status: {d}\n", .{response.status});
-        return HTTPStatusError.StatusNotOK;
+        return AppError.HTTPStatusNotOK;
     }
 
     return response_body;
@@ -97,10 +96,10 @@ fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) !std.json.Value {
     const start_marker = "kmtBoot.setProps(\"";
     const end_marker = "\");";
 
-    var start_idx = std.mem.indexOf(u8, html, start_marker) orelse return ParseError.NotFound;
+    var start_idx = std.mem.indexOf(u8, html, start_marker) orelse return AppError.ParseErrorNotFound;
     start_idx += start_marker.len;
 
-    const end_idx = std.mem.lastIndexOf(u8, html[start_idx..], end_marker) orelse return ParseError.NotFound;
+    const end_idx = std.mem.lastIndexOf(u8, html[start_idx..], end_marker) orelse return AppError.ParseErrorNotFound;
 
     var json = html[start_idx .. start_idx + end_idx];
     json = try std.mem.replaceOwned(u8, allocator, json, "\\\\", "\\");
