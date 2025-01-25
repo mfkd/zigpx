@@ -130,5 +130,11 @@ pub fn main() !void {
     const response = try get(args.url, headers, &client, alloc);
     const json = try parseJsonFromHtml(response.items, allocator);
 
-    try writer.print("{s}", .{json});
+    const data = try std.json.parseFromSlice(std.json.Value, allocator, json, .{});
+
+    const name_value = data.value.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("name");
+
+    const name = if (name_value) |n| n.string else "Unknown";
+
+    try writer.print("Tour Name: {s}\n", .{name});
 }
