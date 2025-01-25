@@ -94,7 +94,7 @@ fn get(
     return response_body;
 }
 
-fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) ![]const u8 {
+fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) !std.json.Value {
     const start_marker = "kmtBoot.setProps(\"";
     const end_marker = "\");";
 
@@ -107,7 +107,42 @@ fn parseJsonFromHtml(html: []u8, allocator: std.mem.Allocator) ![]const u8 {
     json = try std.mem.replaceOwned(u8, allocator, json, "\\\\", "\\");
     json = try std.mem.replaceOwned(u8, allocator, json, "\\\"", "\"");
 
-    return json;
+    return (try std.json.parseFromSlice(std.json.Value, allocator, json, .{})).value;
+}
+
+fn json_to_track(json: std.json.Value, allocator: std.mem.Allocator) !Track {
+    const name_value = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("name");
+    const name = if (name_value) |n| n.string else "Unknown";
+
+    const items = json.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("_embedded").?.object.get("coordinates").?.object.get("items");
+
+    var points: []Point = undefined;
+
+    if (items) |val| {
+        points = try allocator.alloc(Point, val.array.items.len);
+        for (val.array.items, 0..) |item, i| {
+            const alt_value = item.object.get("alt");
+            const elevation = if (alt_value) |alt|
+                switch (alt) {
+                    .float => alt.float,
+                    .integer => @as(f64, @floatFromInt(alt.integer)),
+                    else => null,
+                }
+            else
+                null;
+
+            points[i] = Point{
+                .lat = item.object.get("lat").?.float,
+                .lon = item.object.get("lng").?.float,
+                .elevation = elevation,
+            };
+        }
+    }
+
+    var segments = try allocator.alloc(Segment, 1);
+    segments[0] = .{ .points = points };
+
+    return Track{ .name = name, .segments = segments };
 }
 
 pub fn main() !void {
@@ -131,11 +166,7 @@ pub fn main() !void {
     const response = try get(args.url, headers, &client, alloc);
     const json = try parseJsonFromHtml(response.items, allocator);
 
-    const data = try std.json.parseFromSlice(std.json.Value, allocator, json, .{});
+    const track = try json_to_track(json, allocator);
 
-    const name_value = data.value.object.get("page").?.object.get("_embedded").?.object.get("tour").?.object.get("name");
-
-    const name = if (name_value) |n| n.string else "Unknown";
-
-    try writer.print("Tour Name: {s}\n", .{name});
+    try writer.print("GPX Name: {?s}\n", .{track.name});
 }
