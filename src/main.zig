@@ -120,7 +120,7 @@ fn writeGPX(track: Track, file_path: []const u8) !void {
     var tracks: [1]Track = .{track};
     const gpx = GPX{
         .version = "1.1",
-        .creator = "zigpx",
+        .creator = "zigzag",
         .name = track.name,
         .tracks = &tracks, // Solution applied
     };
