@@ -60,8 +60,14 @@ fn parse(
         return err;
     };
 
-    const output = if (res.args.output.len > 0) res.args.output[0] else return AppError.MissingCommand;
-    const url = if (res.args.url.len > 0) res.args.url[0] else return AppError.MissingCommand;
+    const output = if (res.args.output.len > 0) res.args.output[0] else {
+        std.debug.print("Error: Missing required argument --output\n", .{});
+        return error.MissingOutput;
+    };
+    const url = if (res.args.url.len > 0) res.args.url[0] else {
+        std.debug.print("Error: Missing required argument --url\n", .{});
+        return error.MissingURL;
+    };
 
     return Args{
         .url = url,
