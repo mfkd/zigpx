@@ -114,7 +114,7 @@ fn writeGPX(track: Track, file_path: []const u8) !void {
     const track_array = [_]Track{track};
     const gpx = GPX{
         .version = "1.1",
-        .creator = "komoot-to-gpx",
+        .creator = "zigpx",
         .name = "Komoot Track",
         .tracks = @constCast(track_array[0..]), // Solution applied
     };
