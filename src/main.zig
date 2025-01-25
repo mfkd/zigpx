@@ -206,10 +206,9 @@ fn convertJsonToTrack(json: std.json.Value, allocator: std.mem.Allocator) !Track
         }
     }
 
-    var segments = try allocator.alloc(Segment, 1);
-    segments[0] = .{ .points = points };
+    var segments = [1]Segment{.{ .points = points }};
 
-    return Track{ .name = track_name, .segments = segments };
+    return Track{ .name = track_name, .segments = &segments };
 }
 
 fn fetchTrackHtml(url: []const u8, allocator: std.mem.Allocator) ![]u8 {
