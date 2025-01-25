@@ -52,7 +52,7 @@ fn parse(
     );
 
     var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+    const res = clap.parse(clap.Help, &params, clap.parsers.default, .{
         .diagnostic = &diag,
         .allocator = allocator,
     }) catch |err| {
@@ -60,7 +60,6 @@ fn parse(
         diag.report(std.io.getStdErr().writer(), err) catch {};
         return err;
     };
-    defer res.deinit();
 
     const output = if (res.args.output.len > 0) res.args.output[0] else return error.MissingCommand;
     const url = if (res.args.url.len > 0) res.args.url[0] else return error.MissingCommand;
