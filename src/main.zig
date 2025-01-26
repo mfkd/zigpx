@@ -2,7 +2,7 @@ const clap = @import("clap");
 const std = @import("std");
 const writer = std.io.getStdOut().writer();
 
-// AppError represents the possible errors that can occur
+/// AppError represents the possible errors that can occur
 const AppError = error{
     HTTPStatusNotOK,
     ParseErrorNotFound,
@@ -12,13 +12,13 @@ const AppError = error{
     MissingURL,
 };
 
-// Args represents the command line arguments
+/// Args represents the command line arguments
 const Args = struct {
     url: []const u8,
     output: []const u8,
 };
 
-// GPX represents the root GPX element
+/// GPX represents the root GPX element
 const GPX = struct {
     version: []const u8,
     creator: []const u8,
@@ -26,22 +26,22 @@ const GPX = struct {
     tracks: []Track,
 };
 
-// Track represents a GPX track
+/// Track represents a GPX track
 const Track = struct {
     name: ?[]const u8 = null,
     segments: []Segment,
 };
 
-// Segment represents a track segment
+/// Segment represents a track segment
 const Segment = struct {
     points: []Point,
 };
 
-// Point represents a track point with attributes
+/// Point represents a track point with attributes
 const Point = struct {
     latitude: f64,
     longitude: f64,
-    elevation: ?f64 = null, // Optional field
+    elevation: ?f64 = null,
 };
 
 fn parseArgs(
@@ -124,7 +124,7 @@ fn writeGPX(track: Track, file_path: []const u8) !void {
         .version = "1.1",
         .creator = "zigzag",
         .name = track.name,
-        .tracks = &tracks, // Solution applied
+        .tracks = &tracks,
     };
 
     var file = try std.fs.cwd().createFile(file_path, .{ .truncate = true });
