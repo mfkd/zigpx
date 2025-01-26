@@ -2,6 +2,7 @@ const clap = @import("clap");
 const std = @import("std");
 const writer = std.io.getStdOut().writer();
 
+// AppError represents the possible errors that can occur
 const AppError = error{
     HTTPStatusNotOK,
     ParseErrorNotFound,
@@ -11,6 +12,7 @@ const AppError = error{
     MissingURL,
 };
 
+// Args represents the command line arguments
 const Args = struct {
     url: []const u8,
     output: []const u8,
