@@ -222,8 +222,7 @@ fn fetchTrackHtml(url: []const u8, allocator: std.mem.Allocator) ![]u8 {
         .{ .name = "User-Agent", .value = "Mozilla/5.0" },
     };
 
-    const response = try get(url, headers, &client, allocator);
-    return response.items;
+    return (try get(url, headers, &client, allocator)).items;
 }
 
 fn run(allocator: std.mem.Allocator) !void {
