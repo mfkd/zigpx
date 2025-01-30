@@ -63,23 +63,19 @@ fn parseArgs(
         return err;
     };
 
-    if (res.args.output.len == 0 and res.args.url.len == 0) {
-        std.debug.print("Error: Missing required arguments --output and --url\n", .{});
+    // Check for missing arguments
+    var missing: []const u8 = "";
+    if (res.args.output.len == 0) missing = "--output";
+    if (res.args.url.len == 0) missing = if (missing.len > 0) "--output, --url" else "--url";
+
+    if (missing.len > 0) {
+        std.debug.print("Error: Missing required argument(s): {s}\n", .{missing});
         return AppError.MissingCommand;
     }
 
-    const output = if (res.args.output.len > 0) res.args.output[0] else {
-        std.debug.print("Error: Missing required argument --output\n", .{});
-        return AppError.MissingOutput;
-    };
-    const url = if (res.args.url.len > 0) res.args.url[0] else {
-        std.debug.print("Error: Missing required argument --url\n", .{});
-        return AppError.MissingURL;
-    };
-
-    return Args{
-        .url = url,
-        .output = output,
+    return .{
+        .url = res.args.url[0],
+        .output = res.args.output[0],
     };
 }
 
