@@ -50,7 +50,6 @@ fn parseArgs(
     const params = comptime clap.parseParamsComptime(
         \\-u, --url <str>...     URL of komoot track
         \\-o, --output <str>...  GPX Outputfile
-        \\<str>...
         \\
     );
 
@@ -63,6 +62,11 @@ fn parseArgs(
         diag.report(std.io.getStdErr().writer(), err) catch {};
         return err;
     };
+
+    if (res.args.output.len == 0 and res.args.url.len == 0) {
+        std.debug.print("Error: Missing required arguments --output and --url\n", .{});
+        return AppError.MissingCommand;
+    }
 
     const output = if (res.args.output.len > 0) res.args.output[0] else {
         std.debug.print("Error: Missing required argument --output\n", .{});
