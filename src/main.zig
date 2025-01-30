@@ -124,7 +124,7 @@ fn writeGPX(track: Track, file_path: []const u8) !void {
         .version = "1.1",
         .creator = "zigzag",
         .name = track.name,
-        .tracks = &tracks,
+        .tracks = tracks[0..],
     };
 
     var file = try std.fs.cwd().createFile(file_path, .{ .truncate = true });
